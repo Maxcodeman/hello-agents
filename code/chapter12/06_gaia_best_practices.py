@@ -12,6 +12,8 @@
 import os
 from hello_agents import SimpleAgent, HelloAgentsLLM
 from hello_agents.tools import GAIAEvaluationTool
+from dotenv import load_dotenv
+load_dotenv()
 
 # GAIA官方系统提示词
 GAIA_SYSTEM_PROMPT = """You are a general AI assistant. I will ask you a question. Report your thoughts, and finish your answer with the following template: FINAL ANSWER: [YOUR FINAL ANSWER].

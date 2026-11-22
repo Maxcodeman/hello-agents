@@ -15,7 +15,7 @@
 ### 后端
 - **框架**: HelloAgents (基于SimpleAgent)
 - **API**: FastAPI
-- **MCP工具**: amap-mcp-server (高德地图)
+- **MCP工具**: @amap/amap-maps-mcp-server (高德地图官方MCP服务器)
 - **LLM**: 支持多种LLM提供商(OpenAI, DeepSeek等)
 
 ### 前端
@@ -156,7 +156,7 @@ from hello_agents.tools import MCPTool
 # 创建高德地图MCP工具
 amap_tool = MCPTool(
     name="amap",
-    server_command=["uvx", "amap-mcp-server"],
+    server_command=["npx", "-y", "@amap/amap-maps-mcp-server"],
     env={"AMAP_MAPS_API_KEY": "your_api_key"},
     auto_expand=True
 )
@@ -204,7 +204,7 @@ CC BY-NC-SA 4.0
 - [HelloAgents](https://github.com/datawhalechina/Hello-Agents) - 智能体教程
 - [HelloAgents框架](https://github.com/jjyaoao/HelloAgents) - 智能体框架
 - [高德地图开放平台](https://lbs.amap.com/) - 地图服务
-- [amap-mcp-server](https://github.com/sugarforever/amap-mcp-server) - 高德地图MCP服务器
+- [amap-maps-mcp-server](https://github.com/amap-maps/mcp-server) - 高德地图官方MCP服务器
 
 ---
 

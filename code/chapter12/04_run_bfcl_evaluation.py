@@ -24,12 +24,14 @@ import argparse
 import json
 
 # 添加项目路径
-project_root = Path(__file__).parent.parent
+project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 from hello_agents import SimpleAgent, HelloAgentsLLM
 from hello_agents.evaluation import BFCLDataset, BFCLEvaluator
 
+from dotenv import load_dotenv
+load_dotenv()
 
 # 函数调用系统提示词
 FUNCTION_CALLING_SYSTEM_PROMPT = """你是一个专业的函数调用助手。
@@ -168,21 +170,31 @@ def run_bfcl_official_eval(model_name: str, category: str) -> bool:
     print("步骤4: 运行BFCL官方评估")
     print("="*60)
     
+    # 预检:确认 bfcl_eval 已安装,把"未安装"和"运行失败"区分开
+    import importlib.util
+    if importlib.util.find_spec("bfcl_eval") is None:
+        print("\n❌ 未安装 bfcl-eval")
+        print("   请先安装: pip install bfcl-eval")
+        return False
+
     try:
         # 设置环境变量
         import os
         os.environ['PYTHONUTF8'] = '1'
-        
-        # 运行BFCL评估
+        # 让 BFCL 在 chapter12 目录下读写 result/ 与 score/,
+        # 而不是用 bfcl 包自身位置推导出的 PROJECT_ROOT
+        os.environ['BFCL_PROJECT_ROOT'] = str(project_root)
+
+        # 用当前解释器以模块方式调用,避免依赖 PATH 中的 bfcl 可执行文件
         cmd = [
-            "bfcl", "evaluate",
+            sys.executable, "-m", "bfcl_eval", "evaluate",
             "--model", model_name,
             "--test-category", category,
             "--partial-eval"
         ]
-        
+
         print(f"\n🔄 运行命令: {' '.join(cmd)}")
-        
+
         result = subprocess.run(
             cmd,
             cwd=str(project_root),
@@ -190,22 +202,22 @@ def run_bfcl_official_eval(model_name: str, category: str) -> bool:
             text=True,
             encoding='utf-8'
         )
-        
+
         # 显示输出
         if result.stdout:
             print(result.stdout)
-        
+
         if result.returncode != 0:
             print(f"\n❌ BFCL评估失败:")
             if result.stderr:
                 print(result.stderr)
             return False
-        
+
         return True
-        
-    except FileNotFoundError:
-        print("\n❌ 未找到bfcl命令")
-        print("   请先安装: pip install bfcl-eval")
+
+    except FileNotFoundError as e:
+        print(f"\n❌ 无法启动 BFCL 子进程: {e}")
+        print(f"   当前解释器: {sys.executable}")
         return False
     except Exception as e:
         print(f"\n❌ 运行BFCL评估时出错: {e}")

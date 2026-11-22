@@ -24,17 +24,31 @@ class UnsplashService:
         Returns:
             图片列表
         """
+        if not self.access_key:
+            print("⚠️  未配置 UNSPLASH_ACCESS_KEY,跳过图片搜索")
+            return []
+
         try:
             url = f"{self.base_url}/search/photos"
             params = {
                 "query": query,
-                "per_page": per_page,
-                "client_id": self.access_key
+                "per_page": per_page
             }
-            
-            response = requests.get(url, params=params, timeout=10)
+            # Unsplash 已废弃 client_id 查询参数,必须使用 Authorization 头,
+            # 否则会返回 410 Gone
+            headers = {
+                "Authorization": f"Client-ID {self.access_key}",
+                "Accept-Version": "v1"
+            }
+
+            response = requests.get(url, params=params, headers=headers, timeout=10)
+
+            if response.status_code in (401, 403, 410):
+                print(f"❌ Unsplash授权失败({response.status_code}): 请检查 UNSPLASH_ACCESS_KEY 是否有效")
+                return []
+
             response.raise_for_status()
-            
+
             data = response.json()
             results = data.get("results", [])
             

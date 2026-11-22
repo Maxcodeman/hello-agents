@@ -7,9 +7,13 @@ A2A 协议 + HelloAgents SimpleAgent 集成案例
 from hello_agents.protocols import A2AServer, A2AClient
 from hello_agents import SimpleAgent, HelloAgentsLLM
 from hello_agents.tools import ToolRegistry, Tool, ToolParameter
+from dotenv import load_dotenv
 import threading
 import time
 from typing import Dict, Any
+
+# 加载.env文件中的环境变量
+load_dotenv()
 
 # ============================================================
 # 1. 创建专业 A2A Agent 服务
@@ -100,9 +104,18 @@ class A2ATool(Tool):
         """获取工具参数"""
         return self._parameters
 
-    def run(self, **kwargs) -> str:
+    # def run(self, **kwargs) -> str:
+    #     """执行工具"""
+    #     question = kwargs.get('question', '')
+    #     result = self.client.execute_skill(self.skill_name, f"answer {question}")
+    #     if result.get('status') == 'success':
+    #         return result.get('result', 'No response')
+    #     else:
+    #         return f"Error: {result.get('error', 'Unknown error')}"
+
+    def run(self, args:dict,**kwargs) -> str:
         """执行工具"""
-        question = kwargs.get('question', '')
+        question = args.get('query', '')
         result = self.client.execute_skill(self.skill_name, f"answer {question}")
         if result.get('status') == 'success':
             return result.get('result', 'No response')

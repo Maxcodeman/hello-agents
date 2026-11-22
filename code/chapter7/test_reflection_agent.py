@@ -18,7 +18,7 @@ code_prompts = {
 code_agent = MyReflectionAgent(
     name="我的代码生成助手",
     llm=llm,
-    custom_prompts=code_prompts
+    custom_prompt=code_prompts
 )
 
 # 测试使用

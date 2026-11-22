@@ -8,6 +8,9 @@ from ...services.unsplash_service import get_unsplash_service
 
 router = APIRouter(prefix="/poi", tags=["POI"])
 
+# 图片URL缓存,避免同一景点重复请求
+_photo_cache: dict = {}
+
 
 class POIDetailResponse(BaseModel):
     """POI详情响应"""
@@ -22,7 +25,7 @@ class POIDetailResponse(BaseModel):
     summary="获取POI详情",
     description="根据POI ID获取详细信息,包括图片"
 )
-async def get_poi_detail(poi_id: str):
+def get_poi_detail(poi_id: str):
     """
     获取POI详情
     
@@ -57,7 +60,7 @@ async def get_poi_detail(poi_id: str):
     summary="搜索POI",
     description="根据关键词搜索POI"
 )
-async def search_poi(keywords: str, city: str = "北京"):
+def search_poi(keywords: str, city: str = "北京"):
     """
     搜索POI
 
@@ -91,7 +94,7 @@ async def search_poi(keywords: str, city: str = "北京"):
     summary="获取景点图片",
     description="根据景点名称从Unsplash获取图片"
 )
-async def get_attraction_photo(name: str):
+def get_attraction_photo(name: str):
     """
     获取景点图片
 
@@ -102,14 +105,31 @@ async def get_attraction_photo(name: str):
         图片URL
     """
     try:
-        unsplash_service = get_unsplash_service()
+        if name in _photo_cache:
+            photo_url = _photo_cache[name]
+        else:
+            unsplash_service = get_unsplash_service()
 
-        # 搜索景点图片
-        photo_url = unsplash_service.get_photo_url(f"{name} China landmark")
+            # 搜索景点图片(Unsplash 对中文关键词支持较差,失败时回退到高德POI图片)
+            photo_url = unsplash_service.get_photo_url(f"{name} China landmark")
 
-        if not photo_url:
-            # 如果没找到,尝试只用景点名称搜索
-            photo_url = unsplash_service.get_photo_url(name)
+            if not photo_url:
+                # 如果没找到,尝试只用景点名称搜索
+                photo_url = unsplash_service.get_photo_url(name)
+
+            if not photo_url:
+                try:
+                    amap_service = get_amap_service()
+                    for poi in amap_service.search_poi(name):
+                        if poi.photos:
+                            photo_url = poi.photos[0]
+                            break
+                except Exception as amap_error:
+                    print(f"⚠️  高德POI图片回退失败: {str(amap_error)}")
+
+            # 只缓存成功结果,避免临时故障被永久缓存
+            if photo_url:
+                _photo_cache[name] = photo_url
 
         return {
             "success": True,

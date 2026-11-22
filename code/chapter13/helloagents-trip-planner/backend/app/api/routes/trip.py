@@ -17,7 +17,7 @@ router = APIRouter(prefix="/trip", tags=["旅行规划"])
     summary="生成旅行计划",
     description="根据用户输入的旅行需求,生成详细的旅行计划"
 )
-async def plan_trip(request: TripRequest):
+def plan_trip(request: TripRequest):
     """
     生成旅行计划
 
@@ -75,8 +75,8 @@ async def health_check():
         return {
             "status": "healthy",
             "service": "trip-planner",
-            "agent_name": agent.agent.name,
-            "tools_count": len(agent.agent.list_tools())
+            "agent_name": "多智能体旅行规划系统",
+            "tools_count": len(agent.attraction_agent.list_tools())
         }
     except Exception as e:
         raise HTTPException(

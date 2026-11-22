@@ -1,10 +1,21 @@
 """配置管理模块"""
 
 import os
+import shlex
 from pathlib import Path
 from typing import List
 from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
+
+# 高德地图MCP服务器启动命令
+# 使用高德官方 MCP 服务器(需要 Node.js/npx)
+DEFAULT_AMAP_MCP_COMMAND = "npx -y @amap/amap-maps-mcp-server"
+
+
+def get_amap_mcp_server_command() -> List[str]:
+    """获取高德地图MCP服务器启动命令,可通过环境变量覆盖"""
+    command = os.getenv("AMAP_MCP_SERVER_COMMAND", DEFAULT_AMAP_MCP_COMMAND)
+    return shlex.split(command, posix=True)
 
 # 加载环境变量
 # 首先尝试加载当前目录的.env

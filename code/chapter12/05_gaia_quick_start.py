@@ -23,7 +23,8 @@ If you are asked for a string, don't use articles, neither abbreviations (e.g. f
 If you are asked for a comma separated list, apply the above rules depending of whether the element to be put in the list is a number or a string."""
 
 # 1. 设置HuggingFace Token（如果还没设置）
-# os.environ["HF_TOKEN"] = "your_huggingface_token_here"
+from dotenv import load_dotenv
+load_dotenv()
 
 # 2. 创建智能体（必须使用GAIA官方系统提示词）
 llm = HelloAgentsLLM()

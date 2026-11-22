@@ -697,27 +697,26 @@ settings = get_settings()
 # Create MCP tool
 mcp_tool = MCPTool(
     name="amap_mcp",
-    command="npx",
-    args=["-y", "@sugarforever/amap-mcp-server"],
-    env={"AMAP_API_KEY": settings.amap_api_key},
+    server_command=["npx", "-y", "@amap/amap-maps-mcp-server"],
+    env={"AMAP_MAPS_API_KEY": settings.amap_api_key},
     auto_expand=True
 )
 ```
 
-What does this code do? First, `command` and `args` specify how to start the MCP server. `npx -y @sugarforever/amap-mcp-server` will download and run the `amap-mcp-server` package from the npm repository. The `env` parameter passes environment variables, here we pass the Amap API key.
+What does this code do? First, `server_command` specifies how to start the MCP server. `npx -y @amap/amap-maps-mcp-server` will download and run Amap's official MCP server from the npm repository. The `env` parameter passes environment variables; here we pass the Amap API key (the server reads it from `AMAP_MAPS_API_KEY`).
 
-**Note:** Some examples in this document use `npx` to launch MCP (Model Context Protocol) services. However,in the code repository corresponding to this section of content, we actually use `uvx`. It’s important to note that `npx` and `uvx` share nearly identical design principles—the only difference lies in their ecosystems: `npx` targets JavaScript/Node.js (packages from npm), while `uvx` targets Python (packages from PyPI).There is no superiority or inferiority between the two methods. Please choose according to your needs when using them.
+**Note:** This document and the code repository both use `npx` to launch Amap's official MCP server, so Node.js (`npx`) must be installed. `npx` targets JavaScript/Node.js (packages from npm), while `uvx` targets Python (packages from PyPI). The two methods share nearly identical design principles; this example uses the officially maintained npm version.
 
 When we create the `MCPTool` object, it will start the MCP server process in the background and communicate with the server through standard input/output (stdin/stdout). This is a feature of the MCP protocol: using inter-process communication instead of HTTP, which is more efficient and easier to manage.
 
-The most critical parameter is `auto_expand=True`. When set to True, `MCPTool` will automatically query what tools the MCP server provides, and then create an independent Tool object for each tool. This is why we only created one `MCPTool`, but the Agent got 16 tools. Let's see this process:
+The most critical parameter is `auto_expand=True`. When set to True, `MCPTool` will automatically query what tools the MCP server provides, and then create an independent Tool object for each tool. This is why we only created one `MCPTool`, but the Agent got 12 tools. Let's see this process:
 
 ```python
 # Create one MCPTool
 mcp_tool = MCPTool(..., auto_expand=True)
 agent.add_tool(mcp_tool)
 
-# Agent actually gets 16 tools!
+# Agent actually gets 12 tools!
 print(list(agent.tools.keys()))
 # ['amap_maps_text_search', 'amap_maps_weather', ...]
 ```
@@ -788,9 +787,8 @@ class TripPlannerAgent:
         # Create shared MCP tool instance (create only once)
         self.mcp_tool = MCPTool(
             name="amap_mcp",
-            command="npx",
-            args=["-y", "@sugarforever/amap-mcp-server"],
-            env={"AMAP_API_KEY": settings.amap_api_key},
+            server_command=["npx", "-y", "@amap/amap-maps-mcp-server"],
+            env={"AMAP_MAPS_API_KEY": settings.amap_api_key},
             auto_expand=True
         )
 
@@ -817,7 +815,7 @@ class TripPlannerAgent:
         self.hotel_agent.add_tool(self.mcp_tool)  # Share
 ```
 
-This way, all three Agents can use Amap's 16 tools, but only one MCP server process is running underneath. When we call the `plan_trip` method of `TripPlannerAgent`, the three Agents will call tools in sequence, and all requests are sent to the Amap API through the same MCP server.
+This way, all three Agents can use Amap's 12 tools, but only one MCP server process is running underneath. When we call the `plan_trip` method of `TripPlannerAgent`, the three Agents will call tools in sequence, and all requests are sent to the Amap API through the same MCP server.
 
 ### 13.4.4 Unsplash Image API Integration
 

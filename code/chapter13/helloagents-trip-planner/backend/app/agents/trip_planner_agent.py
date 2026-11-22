@@ -3,10 +3,9 @@
 import json
 from typing import Dict, Any, List
 from hello_agents import SimpleAgent
-from hello_agents.tools import MCPTool
+from ..services.amap_service import get_amap_mcp_tool
 from ..services.llm_service import get_llm
 from ..models.schemas import TripRequest, TripPlan, DayPlan, Attraction, Meal, WeatherInfo, Location, Hotel
-from ..config import get_settings
 
 # ============ Agent提示词 ============
 
@@ -21,9 +20,11 @@ ATTRACTION_AGENT_PROMPT = """你是景点搜索专家。你的任务是根据城
 
 **示例:**
 用户: "搜索北京的历史文化景点"
-你的回复: [TOOL_CALL:amap_maps_text_search:keywords=历史文化,city=北京]
+# 写死工具调用
+你的回复: [TOOL_CALL:amap_maps_text_search:keywords=历史文化,city=北京] 
 
 用户: "搜索上海的公园"
+# 写死工具调用
 你的回复: [TOOL_CALL:amap_maps_text_search:keywords=公园,city=上海]
 
 **注意:**
@@ -39,13 +40,16 @@ WEATHER_AGENT_PROMPT = """你是天气查询专家。你的任务是查询指定
 
 **工具调用格式:**
 使用maps_weather工具时,必须严格按照以下格式:
+# 写死工具调用
 `[TOOL_CALL:amap_maps_weather:city=城市名]`
 
 **示例:**
 用户: "查询北京天气"
+# 写死工具调用
 你的回复: [TOOL_CALL:amap_maps_weather:city=北京]
 
 用户: "上海的天气怎么样"
+# 写死工具调用
 你的回复: [TOOL_CALL:amap_maps_weather:city=上海]
 
 **注意:**
@@ -59,11 +63,13 @@ HOTEL_AGENT_PROMPT = """你是酒店推荐专家。你的任务是根据城市�
 你必须使用工具来搜索酒店!不要自己编造酒店信息!
 
 **工具调用格式:**
+# 写死工具调用
 使用maps_text_search工具搜索酒店时,必须严格按照以下格式:
 `[TOOL_CALL:amap_maps_text_search:keywords=酒店,city=城市名]`
 
 **示例:**
 用户: "搜索北京的酒店"
+# 写死工具调用
 你的回复: [TOOL_CALL:amap_maps_text_search:keywords=酒店,city=北京]
 
 **注意:**
@@ -160,19 +166,11 @@ class MultiAgentTripPlanner:
         print("🔄 开始初始化多智能体旅行规划系统...")
 
         try:
-            settings = get_settings()
             self.llm = get_llm()
 
-            # 创建共享的MCP工具(只创建一次)
+            # 创建共享的MCP工具(只创建一次),失败时会抛出带排查提示的异常
             print("  - 创建共享MCP工具...")
-            self.amap_tool = MCPTool(
-                name="amap",
-                description="高德地图服务",
-                server_command=["uvx", "amap-mcp-server"],
-                env={"AMAP_MAPS_API_KEY": settings.amap_api_key},
-                auto_expand=True
-            )
-            self.amap_tool.expandable=True
+            self.amap_tool = get_amap_mcp_tool()
 
             # 创建景点搜索Agent
             print("  - 创建景点搜索Agent...")
@@ -247,13 +245,19 @@ class MultiAgentTripPlanner:
 
             # 步骤2: 天气查询Agent查询天气
             print("🌤️  步骤2: 查询天气...")
-            weather_query = f"请查询{request.city}的天气信息"
+            weather_query = (
+                f"请查询{request.city}的天气信息。\n"
+                f"[TOOL_CALL:amap_maps_weather:city={request.city}]"
+            )
             weather_response = self.weather_agent.run(weather_query)
             print(f"天气查询结果: {weather_response[:200]}...\n")
 
             # 步骤3: 酒店推荐Agent搜索酒店
             print("🏨 步骤3: 搜索酒店...")
-            hotel_query = f"请搜索{request.city}的{request.accommodation}酒店"
+            hotel_query = (
+                f"请搜索{request.city}的{request.accommodation}。\n"
+                f"[TOOL_CALL:amap_maps_text_search:keywords={request.accommodation},city={request.city}]"
+            )
             hotel_response = self.hotel_agent.run(hotel_query)
             print(f"酒店搜索结果: {hotel_response[:200]}...\n")
 
